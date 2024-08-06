@@ -6,7 +6,7 @@ import requests
 from geopy.distance import geodesic
 
 #insert your client id from your application on discord
-DISCORD_CLIENT_ID = ''
+DISCORD_CLIENT_ID = '1269982804469354526'
 
 #connecting to the discord rpc
 rpc = Presence(DISCORD_CLIENT_ID)
@@ -50,21 +50,26 @@ def update_presence(data):
     try:
         print(data)  # we will print the data to see the logs in the console, so we will know what is going on :)
 
-        # info that will show in the rich presence
-        source_city = data.get('job', {}).get('sourceCity', {})
-        destination_city = data.get('job', {}).get('destinationCity', {})
-        speed = data.get('truck', {}).get('speed', {})
+        # we are getting data from the ets2 telemetry server for the job
+        job = data.get('job', {})
+        source_city = job.get('sourceCity', {})
+        destination_city = job.get('destinationCity', {})
+
+        # we are checking if source city and destination city makes true or not
+        job_valid = source_city and destination_city
+
+        # we are getting kilometers data
         kmLeft = data.get('navigation', {}).get('estimatedDistance', {})
+        # we are converting from meters to kilometers
+        distance_km = kmLeft / 1000
+        # we format the distance to display only the 3 first digits
+        formatted_distance = f"{distance_km:.1f}"  if job else "N/A"
+
 
         # we have to round the speed that we are going on because it's 90.98435 for example, and this is bad.
         # we will fix it with:
+        speed = data.get('truck', {}).get('speed', {})
         speed = round(speed)
-
-        # converting from meters to kilometers.
-        distance_km = kmLeft / 1000
-
-        # we will format the distance_km only to display the first 3 digits for the kilometers.
-        formatted_distance = f"{distance_km:.1f}"  # One decimal place
 
         # we are getting coordinates in real time from the game
         coordinates = data.get('truck', {}).get('placement', {})
@@ -78,15 +83,25 @@ def update_presence(data):
         else:
             nearest_city = "Unknown"
 
+        # if the job is valid, display this data
+        if job_valid:
+            state = f"Driving from {source_city} to {destination_city} - {formatted_distance} KM left"
+            details = f"Currently near {nearest_city} with {speed} KM/H"
+        else: #if we don't have a job, display freeroaming
+            state = "Freeroaming"
+            details = f"Currently in {nearest_city} with {speed} KM/H"
+
+
         # showing the final information on discord
         rpc.update(
-            state = f"Driving from {source_city} to {destination_city} - {formatted_distance} KM left",
-            details=f"Currently near {nearest_city} with {speed} KM/H",
+            state = state,
+            details= details,
             large_image="large_icon_key",  # to add big image on the presence
             small_image="small_icon_key",  # to add small image on the presence
             start=time.time()
         )
-        # exceptions to show if something goes wrong
+
+    # exceptions to show if something goes wrong
     except KeyError as e:
         print(f"KeyError: {e}")
     except Exception as e:
@@ -96,9 +111,9 @@ def update_presence(data):
 while True:
     ets2_data = get_ets2_data()
     update_presence(ets2_data)
-    time.sleep(10)  # set the time to update whatever you want
+    time.sleep(5)  # set the time to update whatever you want
 
 #TODO: i miss to do
-# when we are not in a job, to display freeroam
+# to display if the game is paused or not
 # to display the truck we are driving in the big image on the presence
 # to display the speed limit that we have in the small image on the presence

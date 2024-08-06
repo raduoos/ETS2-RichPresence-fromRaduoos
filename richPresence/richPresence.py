@@ -6,7 +6,7 @@ import requests
 from geopy.distance import geodesic
 
 #insert your client id from your application on discord
-DISCORD_CLIENT_ID = '1269982804469354526'
+DISCORD_CLIENT_ID = ''
 
 #connecting to the discord rpc
 rpc = Presence(DISCORD_CLIENT_ID)
@@ -45,6 +45,41 @@ def get_ets2_data():
     response = requests.get('http://localhost:25555/api/ets2/telemetry')
     return response.json()
 
+# function to determine the speed limit image key
+def get_speedLimit_image_key(speedLimit):
+    if speedLimit == 30:
+        return '30limit'
+    if speedLimit == 40:
+        return '40limit'
+    if speedLimit == 48:
+        return '48limit'
+    if speedLimit == 50:
+        return '50limit'
+    elif speedLimit == 60:
+        return '60limit'
+    elif speedLimit == 70:
+        return '70limit'
+    elif speedLimit == 80:
+        return '80limit'
+    elif speedLimit == 90:
+        return  '90limit'
+    if speedLimit == 97:
+        return '96limit'
+    elif speedLimit == 100:
+        return '100limit'
+    elif speedLimit == 110:
+        return '110limit'
+    if speedLimit == 113:
+        return '112limit'
+    elif speedLimit == 120:
+        return '120limit'
+    elif speedLimit == 130:
+        return '130limit'
+    elif speedLimit == 140:
+        return '140limit'
+    else:
+        return 'nolimit'
+
 # function to update the discord rich presence
 def update_presence(data):
     try:
@@ -71,6 +106,10 @@ def update_presence(data):
         speed = data.get('truck', {}).get('speed', {})
         speed = round(speed)
 
+        # we will get the speed limit info from the server
+        speedlimit = data.get('navigation', {}).get('speedLimit', {})
+        speedlimit_image_key = get_speedLimit_image_key(speedlimit)
+
         # we are getting coordinates in real time from the game
         coordinates = data.get('truck', {}).get('placement', {})
         x = coordinates.get('x', None)
@@ -96,8 +135,8 @@ def update_presence(data):
         rpc.update(
             state = state,
             details= details,
-            large_image="large_icon_key",  # to add big image on the presence
-            small_image="small_icon_key",  # to add small image on the presence
+            large_image="ets2",  # showing a big image on the presence
+            small_image=speedlimit_image_key,  # showing the speed limit key images as small image on the presence
             start=time.time()
         )
 
@@ -115,5 +154,3 @@ while True:
 
 #TODO: i miss to do
 # to display if the game is paused or not
-# to display the truck we are driving in the big image on the presence
-# to display the speed limit that we have in the small image on the presence

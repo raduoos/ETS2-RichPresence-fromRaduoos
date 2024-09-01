@@ -12,6 +12,8 @@ DISCORD_CLIENT_ID = ''
 rpc = Presence(DISCORD_CLIENT_ID)
 rpc.connect()
 
+start_time = time.time()
+
 # get the cities.json file here
 with open('cities.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
@@ -106,9 +108,13 @@ def update_presence(data):
         speed = data.get('truck', {}).get('speed', {})
         speed = round(speed)
 
-        # we will get the speed limit info from the server
+        # we will get the speed limit info
         speedlimit = data.get('navigation', {}).get('speedLimit', {})
         speedlimit_image_key = get_speedLimit_image_key(speedlimit)
+
+        # we will get truck or name brand and model
+        make = data.get('truck', {}).get('make', {})
+        model = data.get('truck', {}).get('model', {})
 
         # we are getting coordinates in real time from the game
         coordinates = data.get('truck', {}).get('placement', {})
@@ -122,22 +128,23 @@ def update_presence(data):
         else:
             nearest_city = "Unknown"
 
-        # if the job is valid, display this data
+        # if the job is valid, display current data
         if job_valid:
-            state = f"Driving from {source_city} to {destination_city} - {formatted_distance} KM left"
-            details = f"Currently near {nearest_city} with {speed} KM/H"
-        else: #if we don't have a job, display freeroaming
-            state = "Freeroaming"
-            details = f"Currently in {nearest_city} with {speed} KM/H"
+            state = f"Near {nearest_city} | {speed} KM/H | {formatted_distance} KM left"
+            details = f"{source_city} > {destination_city} | {make} {model}"
+
+        else: #if we don't have a job, display another thing for freeroaming
+            state = f"{make} {model} | {speed}"
+            details = f"Near {nearest_city}"
 
 
         # showing the final information on discord
         rpc.update(
-            state = state,
-            details= details,
-            large_image="ets2",  # showing a big image on the presence
-            small_image=speedlimit_image_key,  # showing the speed limit key images as small image on the presence
-            start=time.time()
+            state=state,
+            details=details,
+            large_image="ets2",  # to add big image on the presence
+            small_image=speedlimit_image_key,  # to add small image on the presence
+            start=start_time
         )
 
     # exceptions to show if something goes wrong
@@ -151,6 +158,3 @@ while True:
     ets2_data = get_ets2_data()
     update_presence(ets2_data)
     time.sleep(5)  # set the time to update whatever you want
-
-#TODO: i miss to do
-# to display if the game is paused or not
